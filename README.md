@@ -10,9 +10,13 @@ Sample Code:
 
 import Koyo.Koyo
 plc = Koyo.Koyo('192.168.0.22')
+
 plc.FindKoyo() #find koyo plc on your network
+
 plc.ChangeIP(mac_address,newip)
+
 plc.WriteC( C,bool) #C memory you want to write, true or false
+
 plc.ReadC(C)
 
 
