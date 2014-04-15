@@ -28,7 +28,7 @@ class Koyo():
 		data0 = self.sock.recvfrom(1024)
 		data1 = self.sock.recvfrom(1024)
 	def ReadC(self,variable):              #484150fd9ffb3408001900011e06814131
-		self.sock.sendto(bytearray.fromhex('484150fd9ffb3408001900011e06814131'),self.address)
+		self.sock.sendto(bytearray.fromhex('484150fd9ffb3408001900011e06814131'),(self.ip,self.port))
 		reply1 = self.sock.recvfrom(1024)
 		reply2 = self.sock.recvfrom(1024)
 		data = reply2[0]
