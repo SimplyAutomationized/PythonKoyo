@@ -1,6 +1,30 @@
 import socket
+import binascii
+
 def is_odd(num):
 		return num & 0x1
+def int_to_bcd(x):
+    """
+    This translates an integer into
+    binary coded decimal
+
+    >>> int_to_bcd(4)
+    4
+
+    >>> int_to_bcd(34)
+    22
+    """
+
+    if x < 0:
+        raise ValueError("Cannot be a negative integer")
+
+    bcdstring = ''
+    while x > 0:
+        nibble = x % 16
+        bcdstring = str(nibble) + bcdstring
+        x >>= 4
+    return int(bcdstring)
+
 class Koyo():
 	def __init__(self,ip,debug=False):
 		self.ip = ip
@@ -39,6 +63,19 @@ class Koyo():
 		if self.debug:
 			print value
 		return value[variable]=='1'
+	def ReadInput(self,input):
+		msg='4841502900382808001900011e02014131'
+		if(input>16):
+			msg='4841505e01687108001900011e02024131'
+			input=0
+		self.sock.sendto(bytearray.fromhex(msg),(self.ip,self.port))
+		reply1 = self.sock.recvfrom(1024)
+		data = self.sock.recvfrom(1024)[0]
+		if self.debug:
+			print bytearray(data)
+		value =  ('{0:b}'.format(bytearray(data)[13]).zfill(8)[::-1])+\
+		('{0:b}'.format(bytearray(data)[14]).zfill(8)[::-1])
+		return value[input]=='1'
 	def ChangeIP(self,mac,newIP):
 		msg='4841506b04fa510f0015'+mac+'0c001000'+\
 		'{:02X}{:02X}{:02X}{:02X}'.format(*map(int, newIP.split('.')))
@@ -69,4 +106,17 @@ class Koyo():
 			print ip,mac
 			newmesg=recv
 		print 'done'
-	
+	def ReadV(self,v): #read v memory words into a bcd
+		v=v+1
+		bytes=hex(((v << 8) | (v >> 8)) & 0xFFFF).replace('x','') # reverse byte order before sending
+		msg='484150a80a64bf08001900011e02'+bytes+'31'
+		if(self.debug):
+			print msg
+		self.sock.sendto(bytearray.fromhex(msg),(self.ip,self.port))
+		self.sock.recvfrom(1024)
+		data = self.sock.recvfrom(1024)[0]
+		if(self.debug):
+			print binascii.hexlify(data) 
+		value= hex(bytearray(data)[14]).replace('0x','').zfill(2)+hex(bytearray(data)[13]).replace('0x','').zfill(2)
+		return int_to_bcd(int(value,16))
+
