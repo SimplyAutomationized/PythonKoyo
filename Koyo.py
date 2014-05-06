@@ -4,17 +4,6 @@ import binascii
 def is_odd(num):
 		return num & 0x1
 def int_to_bcd(x):
-    """
-    This translates an integer into
-    binary coded decimal
-
-    >>> int_to_bcd(4)
-    4
-
-    >>> int_to_bcd(34)
-    22
-    """
-
     if x < 0:
         raise ValueError("Cannot be a negative integer")
 
@@ -32,6 +21,7 @@ class Koyo():
 		self.port = 28784
 		self.address = (self.ip,self.port)
 		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # UDP
+		self.sock.settimeout(3)
 		#self.sock.bind((self.ip,28784))
 	def WriteC(self,variable,value):
 		v=5
@@ -49,28 +39,51 @@ class Koyo():
 		if self.debug:
 			print msg+'17'+hexvalue
 		self.sock.sendto(bytearray.fromhex(msg),(self.ip,self.port))
-		data0 = self.sock.recvfrom(1024)
-		data1 = self.sock.recvfrom(1024)
-	def ReadC(self,variable):              #484150fd9ffb3408001900011e06814131
-		self.sock.sendto(bytearray.fromhex('484150fd9ffb3408001900011e06814131'),(self.ip,self.port))
-		reply1 = self.sock.recvfrom(1024)
-		reply2 = self.sock.recvfrom(1024)
-		data = reply2[0]
-		value =  ('{0:b}'.format(bytearray(data)[13]).zfill(8)[::-1])+\
-		('{0:b}'.format(bytearray(data)[14]).zfill(8)[::-1])+\
-		('{0:b}'.format(bytearray(data)[15]).zfill(8)[::-1])+\
-		('{0:b}'.format(bytearray(data)[16]).zfill(8)[::-1])
 		if self.debug:
-			print value
-		return value[variable]=='1'
+			data0 = self.sock.recvfrom(1024)
+			data1 = self.sock.recvfrom(1024)
+	def ReadC(self,variable):              #484150fd9ffb3408001900011e06814131
+		try:
+			self.sock.sendto(bytearray.fromhex('484150fd9ffb3408001900011e06814131'),(self.ip,self.port))
+			reply1 = self.sock.recvfrom(1024)
+			reply2 = self.sock.recvfrom(1024)
+			data = reply2[0]
+			value =  ('{0:b}'.format(bytearray(data)[13]).zfill(8)[::-1])+\
+			('{0:b}'.format(bytearray(data)[14]).zfill(8)[::-1])+\
+			('{0:b}'.format(bytearray(data)[15]).zfill(8)[::-1])+\
+			('{0:b}'.format(bytearray(data)[16]).zfill(8)[::-1])
+			if self.debug:
+				print value
+			return value[variable]=='1'
+		except socket.timeout:
+			print 'socket timeout'
+			return -1
+	def ReadC_All(self):
+		try:
+			self.sock.sendto(bytearray.fromhex('484150fd9ffb3408001900011e06814131'),(self.ip,self.port))
+			reply1 = self.sock.recvfrom(1024)
+			reply2 = self.sock.recvfrom(1024)
+			data = reply2[0]
+			value =  ('{0:b}'.format(bytearray(data)[13]).zfill(8)[::-1])+\
+			('{0:b}'.format(bytearray(data)[14]).zfill(8)[::-1])+\
+			('{0:b}'.format(bytearray(data)[15]).zfill(8)[::-1])+\
+			('{0:b}'.format(bytearray(data)[16]).zfill(8)[::-1])
+			return value
+		except socket.timeout:
+			print "socket timeout"
+			return -1		
 	def ReadInput(self,input):
 		msg='4841502900382808001900011e02014131'
 		if(input>16):
 			msg='4841505e01687108001900011e02024131'
 			input=0
-		self.sock.sendto(bytearray.fromhex(msg),(self.ip,self.port))
-		reply1 = self.sock.recvfrom(1024)
-		data = self.sock.recvfrom(1024)[0]
+		try:
+			self.sock.sendto(bytearray.fromhex(msg),(self.ip,self.port))
+			reply1 = self.sock.recvfrom(1024)
+			data = self.sock.recvfrom(1024)[0]
+		except socket.timeout:
+			print 'Socket TimeOut'
+			return -1
 		if self.debug:
 			print bytearray(data)
 		value =  ('{0:b}'.format(bytearray(data)[13]).zfill(8)[::-1])+\
@@ -92,8 +105,8 @@ class Koyo():
 		recv=''
 		while True:
 			try:
-				newmesg=self.sock.recvfrom(1024)	
-			except socket.timeout: 
+				newmesg=self.sock.recvfrom(1024)
+			except socket.timeout:
 				break
 			ips=map(ord,str(newmesg[0]))
 			ip=str(ips[len(ips)-5])+'.'+str(ips[len(ips)-4])+'.'+str(ips[len(ips)-3])+'.'+str(ips[len(ips)-2])
@@ -116,7 +129,7 @@ class Koyo():
 		self.sock.recvfrom(1024)
 		data = self.sock.recvfrom(1024)[0]
 		if(self.debug):
-			print binascii.hexlify(data) 
+			print binascii.hexlify(data)
 		value= hex(bytearray(data)[14]).replace('0x','').zfill(2)+hex(bytearray(data)[13]).replace('0x','').zfill(2)
 		return int_to_bcd(int(value,16))
 
