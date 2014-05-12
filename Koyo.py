@@ -1,4 +1,4 @@
-import socket
+import socket,time
 import binascii
 
 def is_odd(num):
@@ -38,10 +38,13 @@ class Koyo():
 		hexvalue=format(value,'x')
 		if self.debug:
 			print msg+'17'+hexvalue
-		self.sock.sendto(bytearray.fromhex(msg),(self.ip,self.port))
-		if self.debug:
+		try:
+			self.sock.sendto(bytearray.fromhex(msg),(self.ip,self.port))
 			data0 = self.sock.recvfrom(1024)
 			data1 = self.sock.recvfrom(1024)
+		except socket.timeout:
+			time.sleep(1)
+			pass
 	def ReadC(self,variable):              #484150fd9ffb3408001900011e06814131
 		try:
 			self.sock.sendto(bytearray.fromhex('484150fd9ffb3408001900011e06814131'),(self.ip,self.port))
@@ -57,6 +60,7 @@ class Koyo():
 			return value[variable]=='1'
 		except socket.timeout:
 			print 'socket timeout'
+			pass
 			return -1
 	def ReadC_All(self):
 		try:
@@ -71,7 +75,8 @@ class Koyo():
 			return value
 		except socket.timeout:
 			print "socket timeout"
-			return -1		
+			pass
+			return -1
 	def ReadInput(self,input):
 		msg='4841502900382808001900011e02014131'
 		if(input>16):
