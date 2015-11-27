@@ -1,5 +1,5 @@
 import socket, time
-import binascii
+import binascii, KoyoUtils
 
 
 def is_odd(num):
@@ -15,61 +15,6 @@ def int_to_bcd(x):
         bcdstring = str(nibble) + bcdstring
         x >>= 4
     return int(bcdstring)
-
-
-class KoyoUtils:
-    def __init__(self):
-        self.port = 28784
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-
-    def change_ip_from_mac(self, mac, new_ip):
-        """
-
-        :param mac: mac address of koyo
-        :param new_ip: new ip address of koyo
-        """
-        msg = '4841506b04fa510f0015' + mac + '0c001000' + \
-              '{:02X}{:02X}{:02X}{:02X}'.format(*map(int, new_ip.split('.')))
-
-        self.sock.sendto(bytearray.fromhex(msg), ('<broadcast>', self.port))
-        self.sock.recvfrom(1024), self.sock.recvfrom(1024)
-
-    def change_ip_from_ip(self, old_ip, new_ip):
-        mac = self.get_mac_from_ip(old_ip)
-        self.change_ip_from_mac(mac, new_ip)
-
-    def find_koyos(self):
-        msg = '484150f805a550010005'
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.sock.settimeout(3)
-        self.sock.sendto(bytearray.fromhex(msg), ('<broadcast>', self.port))
-        recv = ''
-        koyos = []
-        while True:
-            try:
-                newmesg = self.sock.recvfrom(1024)
-            except socket.timeout:
-                break
-            ips = map(ord, str(newmesg[0]))
-            ip = str(ips[len(ips) - 5]) + '.' + str(ips[len(ips) - 4]) + '.' + str(ips[len(ips) - 3]) + '.' + str(
-                ips[len(ips) - 2])
-            mac = str(hex(ips[len(ips) - 13])[2:].zfill(2)) + \
-                  str(hex(ips[len(ips) - 12])[2:].zfill(2)) + \
-                  str(hex(ips[len(ips) - 11])[2:].zfill(2)) + \
-                  str(hex(ips[len(ips) - 10])[2:].zfill(2)) + \
-                  str(hex(ips[len(ips) - 9])[2:].zfill(2)) + \
-                  str(hex(ips[len(ips) - 8])[2:].zfill(2))
-            print ip, mac
-            koyos.append(Koyo(ip, mac))
-            newmesg = recv
-        return koyos
-
-    def get_mac_from_ip(self, ip):
-        for koyo in self.find_koyos():
-            if (koyo.ip == ip):
-                return koyo.mac
-
 
 class Koyo(object):
     def __init__(self, ip, mac=None, debug=False):
@@ -187,40 +132,7 @@ class Koyo(object):
                 ('{0:b}'.format(bytearray(data)[14]).zfill(8)[::-1])
         return value[input] == '1'
 
-    def ChangeIP(self, mac, newIP):
-        msg = '4841506b04fa510f0015' + mac + '0c001000' + \
-              '{:02X}{:02X}{:02X}{:02X}'.format(*map(int, newIP.split('.')))
-        self.ip = newIP
-        # print msg
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.sock.sendto(bytearray.fromhex(msg), ('<broadcast>', self.port))
-        self.sock.recvfrom(1024), self.sock.recvfrom(1024)
-
-    def FindKoyo(self):
-        msg = '484150f805a550010005'
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-        self.sock.settimeout(3)
-        self.sock.sendto(bytearray.fromhex(msg), ('<broadcast>', self.port))
-        recv = ''
-        while True:
-            try:
-                newmesg = self.sock.recvfrom(1024)
-            except socket.timeout:
-                break
-            ips = map(ord, str(newmesg[0]))
-            ip = str(ips[len(ips) - 5]) + '.' + str(ips[len(ips) - 4]) + '.' + str(ips[len(ips) - 3]) + '.' + str(
-                ips[len(ips) - 2])
-            mac = str(hex(ips[len(ips) - 13])[2:].zfill(2)) + \
-                  str(hex(ips[len(ips) - 12])[2:].zfill(2)) + \
-                  str(hex(ips[len(ips) - 11])[2:].zfill(2)) + \
-                  str(hex(ips[len(ips) - 10])[2:].zfill(2)) + \
-                  str(hex(ips[len(ips) - 9])[2:].zfill(2)) + \
-                  str(hex(ips[len(ips) - 8])[2:].zfill(2))
-            print ip, mac
-            newmesg = recv
-        print 'done'
-
-    def ReadV(self, v):  # read v memory words into an int 0-65535
+    def ReadV(self, variable):  # read v memory words into an int 0-65535
         v = 33620017 + int(str(variable), 8)
         meh = hex(v).replace('0x', '')
         if (len(meh) & 0x1):
@@ -230,11 +142,11 @@ class Koyo(object):
             self.sock.sendto(bytearray.fromhex(msg), (self.ip, self.port))
             self.sock.recvfrom(1024)
             data = self.sock.recvfrom(1024)[0]
-            if (self.debug):
+            if self.debug:
                 print binascii.hexlify(data)
             value = hex(bytearray(data)[14]).replace('0x', '').zfill(2) + hex(bytearray(data)[13]).replace('0x',
                                                                                                            '').zfill(2)
-            if (int(value, 16) != 0 and self.debug):
+            if int(value, 16) != 0 and self.debug:
                 print int(str(variable), 8), variable, value, int(value, 16)
             return int(value, 16)
         except socket.timeout:
@@ -243,3 +155,7 @@ class Koyo(object):
 
     def change_ip(self, new_ip):
         KoyoUtils.change_ip_from_ip(self.ip, new_ip)
+
+
+
+
