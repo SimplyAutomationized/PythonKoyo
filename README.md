@@ -11,9 +11,11 @@ Sample Code:
 import Koyo.Koyo
 plc = Koyo.Koyo('192.168.0.22')
 
-plc.FindKoyo() #find koyo plc on your network
+util = Koyo.KoyoUtils()
 
-plc.ChangeIP(mac_address,newip)
+util.FindKoyo() #returns Koyo() objects in an array
+
+plc.change_ip(newip)
 
 plc.WriteC( C,bool) #C memory you want to write, true or false
 
