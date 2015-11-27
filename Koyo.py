@@ -86,7 +86,7 @@ class Koyo(object):
 
     def WriteC(self, variable, value):
         v = 5
-        if (value):
+        if value:
             v = 4
         msg = '484150512adf240b001a000700014' + str(v) + '01f'
         msg += str(format(variable, 'x')).zfill(3)
@@ -109,7 +109,7 @@ class Koyo(object):
 
     def WriteOutput(self, variable, value):
         v = 5
-        if (value):
+        if value:
             v = 4
         msg = '484150512adf240b001a000700014' + str(v) + '01e8'
         msg += str(format(variable, 'x')).zfill(2)
@@ -190,10 +190,10 @@ class Koyo(object):
 
     def ReadV(self, variable):  # read v memory words into an int 0-65535
         v = 33620017 + int(str(variable), 8)
-        meh = hex(v).replace('0x', '')
-        if len(meh) & 0x1:
-            meh = meh.zfill(len(meh) + 1)
-        msg = '484150a80a64bf08001900011e' + meh
+        value = hex(v).replace('0x', '')
+        if len(value) & 0x1:
+            value = value.zfill(len(value) + 1)
+        msg = '484150a80a64bf08001900011e' + value
         try:
             self.sock.sendto(bytearray.fromhex(msg), (self.ip, self.port))
             self.sock.recvfrom(1024)
@@ -211,6 +211,7 @@ class Koyo(object):
 
     def change_ip(self, new_ip):
         self.utils.change_ip_from_ip(self.ip, new_ip)
+        self.ip = new_ip
 
 
 
