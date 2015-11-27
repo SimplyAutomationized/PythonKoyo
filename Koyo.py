@@ -77,7 +77,7 @@ class Koyo(object):
         self.mac = mac
         self.utils = KoyoUtils()
         if self.mac is None:
-            self.mac = KoyoUtils.get_mac_from_ip(ip)
+            self.mac = self.utils.get_mac_from_ip(ip)
         self.debug = debug
         self.port = 28784
         self.address = (self.ip, self.port)
